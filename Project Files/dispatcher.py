@@ -217,21 +217,45 @@ class Dispatcher:
              # 3) that the taxi's location is 'on-grid': somewhere in the dispatcher's map
              # 4) that at least one valid taxi has actually bid on the fare
              if fareNode is not None:
+                count = 0;
                 for taxiIdx in self._fareBoard[origin][destination][time].bidders:
+                    count = count +1
                     if len(self._taxis) > taxiIdx:
                        bidderLoc = self._taxis[taxiIdx].currentLocation
                        bidderNode = self._parent.getNode(bidderLoc[0],bidderLoc[1])
                        if bidderNode is not None:
                           # ultimately the naive algorithm chosen is which taxi is the closest. This is patently unfair for several
                           # reasons, but does produce *a* winner.
-                          if winnerNode is None or self._parent.distance2Node(bidderNode,fareNode) < self._parent.distance2Node(winnerNode,fareNode) or (self._taxis[allocatedTaxi]._passenger != None and self._taxis[taxiIdx]._passenger == None):
-                             allocatedTaxi = taxiIdx
-                             winnerNode = bidderNode
-                          else:
-                             # and after all that, we still have to check that somebody won, because any of the other reasons to invalidate
-                             # the auction may have occurred.
-                             if allocatedTaxi >= 0:
-                                # but if so, allocate the taxi.
-                                self._fareBoard[origin][destination][time].taxi = allocatedTaxi     
-                                self._parent.allocateFare(origin,self._taxis[allocatedTaxi])
-     
+                          
+                          NoTaxiFares = len([fare for fare in self._taxis[allocatedTaxi]._availableFares.values() if fare.allocated])
+                          NoIndexFares = len([fare for fare in self._taxis[taxiIdx]._availableFares.values() if fare.allocated])
+
+                          IndexEqualFares = NoTaxiFares == NoIndexFares
+                          IndexLessFares = NoTaxiFares > NoIndexFares
+                          DistanceShorter = self._parent.distance2Node(bidderNode,fareNode) < self._parent.distance2Node(winnerNode,fareNode)
+                          NoBidders = len(self._fareBoard[origin][destination][time].bidders)
+
+                          print("TaxiIdx: ", taxiIdx)
+                          print("Allocated Taxi: ", allocatedTaxi)
+                          print("Does index Taxi have Equal Fares: ", IndexEqualFares)
+                          if not IndexEqualFares:
+                                print ("Does infex Taxi have less Fares: ", IndexLessFares)
+                                print("Is distance shorter: ", DistanceShorter)
+ 
+                          if winnerNode is None or NoTaxiFares > NoIndexFares:
+                                allocatedTaxi = taxiIdx
+                                winnerNode = bidderNode
+                                print("Taxi ", allocatedTaxi, " is currently the winner!")
+                          elif NoTaxiFares == NoIndexFares:
+                                if self._parent.distance2Node(bidderNode,fareNode) < self._parent.distance2Node(winnerNode,fareNode):
+                                      allocatedTaxi = taxiIdx
+                                      winnerNode = bidderNode
+                                      print("Taxi ", allocatedTaxi, " is currently the winner!")
+                             
+                # and after all that, we still have to check that somebody won, because any of the other reasons to invalidate
+                # the auction may have occurred.
+                if allocatedTaxi >= 0:
+                    # but if so, allocate the taxi.
+                    self._fareBoard[origin][destination][time].taxi = allocatedTaxi     
+                    self._parent.allocateFare(origin,self._taxis[allocatedTaxi])
+                    print("Taxi ", allocatedTaxi, " won the fare!")
