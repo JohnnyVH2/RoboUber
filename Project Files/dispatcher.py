@@ -224,11 +224,7 @@ class Dispatcher:
                        if bidderNode is not None:
                           # ultimately the naive algorithm chosen is which taxi is the closest. This is patently unfair for several
                           # reasons, but does produce *a* winner.
-                          print("Allocated Taxi Passengers: ", self._taxis[allocatedTaxi]._passenger)
-                          print("Index Taxi Passengers: ", self._taxis[taxiIdx]._passenger)
-                          if self._taxis[allocatedTaxi]._passenger != False and self._taxis[taxiIdx]._passenger == False:
-                                print("YAYAYAYAYAYA")
-                          if winnerNode is None or self._parent.distance2Node(bidderNode,fareNode) < self._parent.distance2Node(winnerNode,fareNode):
+                          if winnerNode is None or self._parent.distance2Node(bidderNode,fareNode) < self._parent.distance2Node(winnerNode,fareNode) or (self._taxis[allocatedTaxi]._passenger != None and self._taxis[taxiIdx]._passenger == None):
                              allocatedTaxi = taxiIdx
                              winnerNode = bidderNode
                           else:
