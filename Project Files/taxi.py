@@ -357,9 +357,10 @@ class Taxi:
                    
                    while len(expansionTargets) > 0:
                          expTgt = expansionTargets.pop()
-                         trafficProb = 1 + (self._world.getNode(nextNode[0][0], nextNode[0][1])._traffic / self._world.getNode(nextNode[0][0], nextNode[0][1])._trafficMax)
+                         trafficProb = (self._world.getNode(nextNode[0][0], nextNode[0][1])._traffic / self._world.getNode(nextNode[0][0], nextNode[0][1])._trafficMax)
+                         trafficMultiplier = 1 + trafficProb
 
-                         estimatedDistance = bestPath - heuristic(nextNode[0],destination) + heuristic(expTgt[0],destination) + expTgt[1][1] * trafficProb
+                         estimatedDistance = bestPath - heuristic(nextNode[0],destination) + heuristic(expTgt[0],destination) + expTgt[1][1] #* trafficMultiplier
                          
                          if estimatedDistance in expanded:             
                             expanded[estimatedDistance][expTgt[0]] = nextNode[1]+[expTgt[0]]
@@ -393,6 +394,61 @@ class Taxi:
           CloseEnough = CanAffordToDrive and WillArriveOnTime
           Worthwhile = PriceBetterThanCost and NotCurrentlyBooked 
           Bid = CloseEnough and Worthwhile
+
+          #CSPs I am considering
+          LongestFareWaitTime = 0
+          for fare in self._availableFares.items():
+             if LongestFareWaitTime < (self._world._time - fare[0][0]):
+                LongestFareWaitTime = (self._world._time - fare[0][0])
+
+          CurrentMoney = self._account
+          AccountSeverity = 0
+          FaresSeverity = 0
+          DistanceSeverity = 0
+          WaitTimeSeverity = 0
+          trafficProb = (self._world.getNode(destination[0], destination[1])._traffic / self._world.getNode(destination[0], destination[1])._trafficMax)
+          trafficMultiplier = 1 - trafficProb
+          CanAffordToDestination = TimeToDestination < self._account
+
+          # CSP to determine how important their current financial state is
+          if CurrentMoney < 100:
+            AccountSeverity = 1
+          elif CurrentMoney < 200:
+            AccountSeverity = 0.8
+          elif CurrentMoney < 300:
+            AccountSeverity = 0.7
+          else:
+            AccountSeverity = 0.5
+
+          # CSP to determine how important their current fares state is
+          if NoAllocatedFares < 1:
+            FaresSeverity = 1
+          elif NoAllocatedFares < 2:
+            FaresSeverity = 0.8
+          elif NoAllocatedFares < 3:
+            FaresSeverity = 0.7
+          else:
+            FaresSeverity = 0.5
+
+          # CSP to determine how important their current distance state is
+          if TimeToDestination < 1:
+            DistanceSeverity = 1
+          elif TimeToDestination < 2:
+            DistanceSeverity = 0.8
+          elif TimeToDestination < 3:
+            DistanceSeverity = 0.7
+          else:
+            DistanceSeverity = 0.5
+
+          if LongestFareWaitTime > 20:
+            WaitTimeSeverity = 2
+
+          TotalScore = (WaitTimeSeverity + AccountSeverity + FaresSeverity + DistanceSeverity + int(CanAffordToDestination)) * trafficMultiplier
+
+          if TotalScore > 2:
+            Bid = True
+          else:
+            Bid = False
 
           return Bid
 

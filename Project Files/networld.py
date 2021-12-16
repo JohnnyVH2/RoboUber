@@ -63,6 +63,7 @@ class Fare:
          self._taxi = None
          self._enroute = False
          self._price = 0
+         self._canceled = False
 
       # board a taxi
       def pickUp(self, taxi):
@@ -83,6 +84,7 @@ class Fare:
           # ground is so gridlocked that no one is getting anywhere, any time soon.
           expectedTime2Dest = self._parent.travelTime(self._origin, self._destination)
           if (expectedTime2Dest < 0) or (self._price > 10*expectedTime2Dest):
+             self._canceled = True
              print("Fare ({0},{1}) abandoned because expectedTime2Dest was {2} and price was {3}".format(self.origin[0],self.origin[1],expectedTime2Dest, self._price))
              self._waitTime = 0
 

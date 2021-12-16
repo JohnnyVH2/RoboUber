@@ -44,6 +44,7 @@ class Dispatcher:
           self._fareBoard = {}
           # serviceMap gives the dispatcher its service area
           self._map = serviceMap
+          self._cancleCount = 0
 
       #_________________________________________________________________________________________________________
       # methods to add objects to the Dispatcher's knowledge base
@@ -124,6 +125,7 @@ class Dispatcher:
              if destination in self._fareBoard[origin]:
                 if calltime in self._fareBoard[origin][destination]:
                    # get rid of it
+                   self._cancleCount += 1
                    print("Fare ({0},{1}) cancelled".format(origin[0],origin[1]))
                    # inform taxis that the fare abandoned
                    self._parent.cancelFare(origin, self._taxis[self._fareBoard[origin][destination][calltime].taxi])
@@ -196,10 +198,16 @@ class Dispatcher:
       def _costFare(self, fare):
           timeToDestination = self._parent.travelTime(self._parent.getNode(fare.origin[0],fare.origin[1]),
                                                       self._parent.getNode(fare.destination[0],fare.destination[1]))
+
+
+          # self.distance2Node(fare._origin, fare._destination)
+          # fare.calltime
+
           # if the world is gridlocked, a flat fare applies.
           if timeToDestination < 0:
-             return 150
-          return (25+timeToDestination)/0.9
+             return 2*150
+
+          return 2*(25+timeToDestination)/0.9
 
       # TODO
       # this method decides which taxi to allocate to a given fare. The algorithm here is not a fair allocation
@@ -261,8 +269,6 @@ class Dispatcher:
                                 FareWeight = 1
                                 DistanceWeight = 1
                                 PassengerWeight = 1
-                                
-                                NoIndexFares = len([fare for fare in self._taxis[taxiIdx]._availableFares.values() if fare.allocated])
 
                                 # The higher the Severity the more likely we want to give this taxi the Fare
                                 if (AccountMax - AccountMin) == 0:
@@ -279,6 +285,7 @@ class Dispatcher:
                                     taxiDistanceSeverity = 1
                                 else:
                                     taxiDistanceSeverity = 1 - ((self._parent.distance2Node(bidderNode,fareNode) - DistanceMin) / (DistanceMax - DistanceMin))
+                                    
 
                                 taxiPassengerSeverity = 1 - int((self._taxis[taxiIdx]._passenger == None))
 
@@ -297,4 +304,3 @@ class Dispatcher:
                      # but if so, allocate the taxi.
                      self._fareBoard[origin][destination][time].taxi = allocatedTaxi
                      self._parent.allocateFare(origin,self._taxis[allocatedTaxi])
-                     print("Taxi ", allocatedTaxi, " won the fare!")

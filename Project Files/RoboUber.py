@@ -19,7 +19,7 @@ worldY = 50
 runTime = 1440
 # you can change the DisplaySize to be bigger if you want larger-size objects on-screen
 displaySize = (1024,768)
-trafficOn = True
+trafficOn = False
 
 # play around with these parameters if you want, to see how they affect the results.
 # (but keep the original settings so you can return to something more-or-less 'sensible)
@@ -194,6 +194,7 @@ def runRoboUber(worldX,worldY,runTime,stop,junctions=None,streets=None,interpola
    print("Taxi ", taxi2.number, "'s Account: ", taxi2._account, " Retired after ", taxi2._offDutyTime, " minutes.")
    print("Taxi ", taxi3.number, "'s Account: ", taxi3._account, " Retired after ", taxi3._offDutyTime, " minutes.")
    print("Dispatch's Revenue: ", dispatcher0._revenue)
+   print("Number of cancelled trips: ", dispatcher0._cancleCount)
 
 
 # event to manage a user exit, invoked by pressing 'q' on the keyboard
