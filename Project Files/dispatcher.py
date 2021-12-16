@@ -257,10 +257,10 @@ class Dispatcher:
                            bidderLoc = self._taxis[taxiIdx].currentLocation
                            bidderNode = self._parent.getNode(bidderLoc[0],bidderLoc[1])
                            if bidderNode is not None:
-                                AccountWeight = 0.5
+                                AccountWeight = 1
                                 FareWeight = 1
-                                DistanceWeight = 0.5
-                                PassengerWeight = 0.1
+                                DistanceWeight = 1
+                                PassengerWeight = 1
                                 
                                 NoIndexFares = len([fare for fare in self._taxis[taxiIdx]._availableFares.values() if fare.allocated])
 

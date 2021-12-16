@@ -357,7 +357,9 @@ class Taxi:
                    
                    while len(expansionTargets) > 0:
                          expTgt = expansionTargets.pop()
-                         estimatedDistance = bestPath - heuristic(nextNode[0],destination) + heuristic(expTgt[0],destination) + expTgt[1][1]
+                         trafficProb = 1 + (self._world.getNode(nextNode[0][0], nextNode[0][1])._traffic / self._world.getNode(nextNode[0][0], nextNode[0][1])._trafficMax)
+
+                         estimatedDistance = bestPath - heuristic(nextNode[0],destination) + heuristic(expTgt[0],destination) + expTgt[1][1] * trafficProb
                          
                          if estimatedDistance in expanded:             
                             expanded[estimatedDistance][expTgt[0]] = nextNode[1]+[expTgt[0]]
@@ -391,6 +393,7 @@ class Taxi:
           CloseEnough = CanAffordToDrive and WillArriveOnTime
           Worthwhile = PriceBetterThanCost and NotCurrentlyBooked 
           Bid = CloseEnough and Worthwhile
+
           return Bid
 
 
