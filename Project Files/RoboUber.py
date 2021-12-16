@@ -186,7 +186,15 @@ def runRoboUber(worldX,worldY,runTime,stop,junctions=None,streets=None,interpola
             # print("Times: {0}, Fares: {1}, Taxis: {2}".format(outputValues['time'], outputValues['fares'].keys(), outputValues['taxis'].keys()))
             if threadTime != svcArea.simTime:
                threadTime += 1
-            time.sleep(1)
+            time.sleep(0)
+
+   print("Finished Modified Run")
+   print("Taxi ", taxi0.number, "'s Account: ", taxi0._account, " Retired after ", taxi0._offDutyTime, " minutes.")
+   print("Taxi ", taxi1.number, "'s Account: ", taxi1._account, " Retired after ", taxi1._offDutyTime, " minutes.")
+   print("Taxi ", taxi2.number, "'s Account: ", taxi2._account, " Retired after ", taxi2._offDutyTime, " minutes.")
+   print("Taxi ", taxi3.number, "'s Account: ", taxi3._account, " Retired after ", taxi3._offDutyTime, " minutes.")
+   print("Dispatch's Revenue: ", dispatcher0._revenue)
+
 
 # event to manage a user exit, invoked by pressing 'q' on the keyboard
 userExit = threading.Event()
@@ -363,10 +371,3 @@ while curTime < runTime:
 
              # advance the time                           
              curTime += 1
-
-
-
-
-
-
-      

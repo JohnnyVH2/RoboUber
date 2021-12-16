@@ -302,6 +302,8 @@ class Taxi:
           # we just dropped off a fare and received payment, add it to the account
           elif msg == self.FARE_PAY:
              self._account += args['amount']
+             print("Taxi: ", self.number, " received: ", args['amount'])
+             print("Taxi: ", self.number, " has: ", self._account)
              return
           # a fare cancelled before being collected, remove it from the list
           elif msg == self.FARE_CANCEL:
@@ -313,35 +315,56 @@ class Taxi:
 
       ''' HERE IS THE PART THAT YOU NEED TO MODIFY
       '''
-
+            
       # TODO
       # this function should build your route and fill the _path list for each new
       # journey. Below is a naive depth-first search implementation. You should be able
       # to do much better than this!
-      def _planPath(self, origin, destination, **args):
-          # the list of explored paths. Recursive invocations pass in explored as a parameter
-          if 'explored' not in args:
-             args['explored'] = {}
-          # add this origin to the explored list
-          # explored is a dict purely so we can hash its index for fast lookup, so its value doesn't matter
-          args['explored'][origin] = None 
-          # the actual path we are going to generate
-          path = [origin]
-          # take the next node in the frontier, and expand it depth-wise               
-          if origin in self._map:
-             # the frontier of unexplored paths (from this Node
-             frontier = [node for node in self._map[origin].keys() if node not in args['explored']]
-             # recurse down to the next node. This will automatically create a depth-first
-             # approach because the recursion won't bottom out until no more frontier nodes
-             # can be generated 
-             for nextNode in frontier:
-                 path = path + self._planPath(nextNode, destination, explored=args['explored'])
-                 # stop early as soon as the destination has been found by any route.
-                 if destination in path:
-                    return path
-          # didn't reach the destination from any reachable node
-          # no need, therefore, to expand the path for the higher-level call, this is a dead end.
-          return [] 
+      def _planPath(self, origin, destination, heuristic=None, **args):
+          if origin not in self._map:
+             return None
+          if origin == destination:
+             return [origin]
+            
+          if heuristic is None:
+                heuristic = lambda x, y: math.sqrt((x[0] - y[0]) ** 2 + (x[1] - y[1]) ** 2)
+          # these are the nodes that have been completely expanded, so don't need to be traced backwards
+          explored = set()
+          # these are the nodes still to be explored, sorted by estimated cost. They need to have
+          # the complete path stored because any one of them might contain the best solution. We
+          # arrange this as a nested dictionary to get a reasonably straightforward way to look up
+          # the cheapest path. A heapq could also work but introduces implementation complexities.
+          expanded = {heuristic(origin, destination): {origin: [origin]}}
+          
+          while len(expanded) > 0:
+                bestPath = min(expanded.keys())
+                nextExpansion = expanded[bestPath]
+                
+                if destination in nextExpansion:
+                  return nextExpansion[destination]
+            
+                nextNode = nextExpansion.popitem()
+                
+                while len(nextExpansion) > 0 and nextNode[0] in explored:
+                      nextNode = nextExpansion.popitem()
+                      
+                if len(nextExpansion) == 0:
+                   del expanded[bestPath]
+                   
+                if nextNode[0] not in explored:
+                   explored.add(nextNode[0])
+                   expansionTargets = [node for node in self._map[nextNode[0]].items() if node[0] not in explored]
+                   
+                   while len(expansionTargets) > 0:
+                         expTgt = expansionTargets.pop()
+                         estimatedDistance = bestPath - heuristic(nextNode[0],destination) + heuristic(expTgt[0],destination) + expTgt[1][1]
+                         
+                         if estimatedDistance in expanded:             
+                            expanded[estimatedDistance][expTgt[0]] = nextNode[1]+[expTgt[0]]
+                         else:
+                            expanded[estimatedDistance] = {expTgt[0]: nextNode[1]+[expTgt[0]]}
+                            
+          return None
                 
       # TODO
       # this function decides whether to offer a bid for a fare. In general you can consider your current position, time,
@@ -369,7 +392,6 @@ class Taxi:
           Worthwhile = PriceBetterThanCost and NotCurrentlyBooked 
           Bid = CloseEnough and Worthwhile
           return Bid
-
 
 
 

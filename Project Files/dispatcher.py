@@ -153,6 +153,8 @@ class Dispatcher:
           # don't take payments from dodgy alternative universes
           if self._parent == parent:
              self._revenue += amount
+             print("Dispatch received: ", amount)
+             print("Dispatch has: ", self._revenue)
 
       #________________________________________________________________________________________________________________
 
@@ -217,45 +219,82 @@ class Dispatcher:
              # 3) that the taxi's location is 'on-grid': somewhere in the dispatcher's map
              # 4) that at least one valid taxi has actually bid on the fare
              if fareNode is not None:
-                count = 0;
                 for taxiIdx in self._fareBoard[origin][destination][time].bidders:
-                    count = count +1
                     if len(self._taxis) > taxiIdx:
                        bidderLoc = self._taxis[taxiIdx].currentLocation
                        bidderNode = self._parent.getNode(bidderLoc[0],bidderLoc[1])
                        if bidderNode is not None:
                           # ultimately the naive algorithm chosen is which taxi is the closest. This is patently unfair for several
                           # reasons, but does produce *a* winner.
-                          
+                          AccountMin = 0
+                          AccountMax = 0
+                          FaresMin = 0
+                          FaresMax = 0
+                          DistanceMin = 0
+                          DistanceMax = 0
+
                           NoTaxiFares = len([fare for fare in self._taxis[allocatedTaxi]._availableFares.values() if fare.allocated])
                           NoIndexFares = len([fare for fare in self._taxis[taxiIdx]._availableFares.values() if fare.allocated])
-
-                          IndexEqualFares = NoTaxiFares == NoIndexFares
-                          IndexLessFares = NoTaxiFares > NoIndexFares
                           DistanceShorter = self._parent.distance2Node(bidderNode,fareNode) < self._parent.distance2Node(winnerNode,fareNode)
-                          NoBidders = len(self._fareBoard[origin][destination][time].bidders)
+                          
+                          if self._taxis[taxiIdx]._account < AccountMin:  
+                                AccountMin = self._taxis[taxiIdx]._account
+                          elif self._taxis[taxiIdx]._account > AccountMin:
+                                AccountMax = self._taxis[taxiIdx]._account
+                          if NoIndexFares < NoTaxiFares:
+                                FaresMin = NoIndexFares
+                          elif NoIndexFares > NoTaxiFares:
+                                FaresMax = NoIndexFares
+                          if DistanceShorter:
+                                DistanceMin = self._parent.distance2Node(bidderNode,fareNode)
+                          elif not DistanceShorter:
+                                DistanceMax = self._parent.distance2Node(winnerNode,fareNode)
 
-                          print("TaxiIdx: ", taxiIdx)
-                          print("Allocated Taxi: ", allocatedTaxi)
-                          print("Does index Taxi have Equal Fares: ", IndexEqualFares)
-                          if not IndexEqualFares:
-                                print ("Does infex Taxi have less Fares: ", IndexLessFares)
-                                print("Is distance shorter: ", DistanceShorter)
- 
-                          if winnerNode is None or NoTaxiFares > NoIndexFares:
-                                allocatedTaxi = taxiIdx
-                                winnerNode = bidderNode
-                                print("Taxi ", allocatedTaxi, " is currently the winner!")
-                          elif NoTaxiFares == NoIndexFares:
-                                if self._parent.distance2Node(bidderNode,fareNode) < self._parent.distance2Node(winnerNode,fareNode):
-                                      allocatedTaxi = taxiIdx
-                                      winnerNode = bidderNode
-                                      print("Taxi ", allocatedTaxi, " is currently the winner!")
-                             
+                  
+                allocatedTaxiSeverity = 0
+                for taxiIdx in self._fareBoard[origin][destination][time].bidders:
+                    if len(self._taxis) > taxiIdx:
+                           bidderLoc = self._taxis[taxiIdx].currentLocation
+                           bidderNode = self._parent.getNode(bidderLoc[0],bidderLoc[1])
+                           if bidderNode is not None:
+                                AccountWeight = 0.5
+                                FareWeight = 1
+                                DistanceWeight = 0.5
+                                PassengerWeight = 0.1
+                                
+                                NoIndexFares = len([fare for fare in self._taxis[taxiIdx]._availableFares.values() if fare.allocated])
+
+                                # The higher the Severity the more likely we want to give this taxi the Fare
+                                if (AccountMax - AccountMin) == 0:
+                                    taxiAccountSeverity = 1
+                                else:
+                                    taxiAccountSeverity = 1 - ((self._taxis[taxiIdx]._account - AccountMin) / (AccountMax - AccountMin))
+
+                                if (FaresMax - FaresMin) == 0:
+                                    taxiFareSeverity = 1
+                                else:
+                                    taxiFareSeverity = 1 - ((NoIndexFares - FaresMin) / (FaresMax - FaresMin))
+
+                                if (DistanceMax - DistanceMin) == 0:
+                                    taxiDistanceSeverity = 1
+                                else:
+                                    taxiDistanceSeverity = 1 - ((self._parent.distance2Node(bidderNode,fareNode) - DistanceMin) / (DistanceMax - DistanceMin))
+
+                                taxiPassengerSeverity = 1 - int((self._taxis[taxiIdx]._passenger == None))
+
+
+                                taxiSeverity = (taxiAccountSeverity * AccountWeight) + (taxiFareSeverity * FareWeight) + (taxiDistanceSeverity * DistanceWeight) + (taxiPassengerSeverity * PassengerWeight)
+                          
+                                if taxiSeverity > allocatedTaxiSeverity:
+                                    allocatedTaxiSeverity = taxiSeverity
+                                    allocatedTaxi = taxiIdx
+
+
+            
                 # and after all that, we still have to check that somebody won, because any of the other reasons to invalidate
                 # the auction may have occurred.
                 if allocatedTaxi >= 0:
-                    # but if so, allocate the taxi.
-                    self._fareBoard[origin][destination][time].taxi = allocatedTaxi     
-                    self._parent.allocateFare(origin,self._taxis[allocatedTaxi])
-                    print("Taxi ", allocatedTaxi, " won the fare!")
+                     # but if so, allocate the taxi.
+                     self._fareBoard[origin][destination][time].taxi = allocatedTaxi
+                     self._parent.allocateFare(origin,self._taxis[allocatedTaxi])
+                     print("Taxi ", allocatedTaxi, " won the fare!")

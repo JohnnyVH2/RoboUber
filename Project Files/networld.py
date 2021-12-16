@@ -972,6 +972,4 @@ class NetWorld:
                     self._trafficQ[node[0]] -= self._net[node[0]].injectTraffic(self, node[1])
                 # update the batch stepper
                 self._time += 1
-                ticksRun +=1                
-
- 
+                ticksRun +=1     
