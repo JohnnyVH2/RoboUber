@@ -360,7 +360,7 @@ class Taxi:
                          trafficProb = (self._world.getNode(nextNode[0][0], nextNode[0][1])._traffic / self._world.getNode(nextNode[0][0], nextNode[0][1])._trafficMax)
                          trafficMultiplier = 1 + trafficProb
 
-                         estimatedDistance = bestPath - heuristic(nextNode[0],destination) + heuristic(expTgt[0],destination) + expTgt[1][1] #* trafficMultiplier
+                         estimatedDistance = bestPath - heuristic(nextNode[0],destination) + heuristic(expTgt[0],destination) + expTgt[1][1] * trafficMultiplier
                          
                          if estimatedDistance in expanded:             
                             expanded[estimatedDistance][expTgt[0]] = nextNode[1]+[expTgt[0]]
